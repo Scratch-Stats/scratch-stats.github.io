@@ -65,16 +65,81 @@ function setupEventListeners() {
         btn.addEventListener('click', switchTab);
     });
 
-    // Search functionality
-    const searchBtn = document.getElementById('searchBtn');
+    // Search functionality - Fixed: removed reference to non-existent searchBtn
     const searchInput = document.getElementById('searchInput');
+    const searchFilterToggle = document.querySelector('.search-filter-toggle');
+    const searchFilters = document.querySelector('.search-filters');
 
-    searchBtn.addEventListener('click', performSearch);
+    // Toggle search filters
+    if (searchFilterToggle) {
+        searchFilterToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            searchFilters.style.display = searchFilters.style.display === 'none' ? 'block' : 'none';
+        });
+    }
+
+    // Close filters when clicking elsewhere
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.search-wrapper')) {
+            if (searchFilters) searchFilters.style.display = 'none';
+        }
+    });
+
+    // Search on input with debounce for suggestions
+    let searchTimeout;
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(updateSearchSuggestions, 300);
+    });
+
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             performSearch();
         }
     });
+}
+
+// Update search suggestions as user types
+async function updateSearchSuggestions() {
+    const query = document.getElementById('searchInput').value.trim();
+    const suggestionsDiv = document.getElementById('searchSuggestions');
+
+    if (!query || query.length < 2) {
+        suggestionsDiv.style.display = 'none';
+        return;
+    }
+
+    try {
+        // Get project suggestions
+        const projectsResponse = await fetch(`https://api.scratch.mit.edu/search/projects?q=${encodeURIComponent(query)}&limit=3`);
+        const projectsData = await projectsResponse.json();
+
+        let html = '';
+        if (projectsData && projectsData.length > 0) {
+            projectsData.slice(0, 3).forEach(project => {
+                html += `<div class="suggestion-item" onclick="selectSuggestion('${project.title}')">
+                    <i class="fas fa-project-diagram"></i> ${project.title}
+                </div>`;
+            });
+        }
+
+        if (html) {
+            suggestionsDiv.innerHTML = html;
+            suggestionsDiv.style.display = 'block';
+        } else {
+            suggestionsDiv.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Error fetching suggestions:', error);
+        suggestionsDiv.style.display = 'none';
+    }
+}
+
+// Select a suggestion and perform search
+function selectSuggestion(suggestion) {
+    document.getElementById('searchInput').value = suggestion;
+    document.getElementById('searchSuggestions').style.display = 'none';
+    performSearch();
 }
 
 // Perform search
@@ -213,10 +278,23 @@ function checkSession() {
     }
 }
 
-// Load public statistics
+// Load public statistics - FIXED: Now properly updates the UI
 async function loadPublicStats() {
     try {
-        // Mock data - in production, this would call the Scratch API
+        // Try to fetch real data from Scratch API
+        const response = await fetch('https://api.scratch.mit.edu/statistics');
+        if (response.ok) {
+            const stats = await response.json();
+            document.getElementById('totalUsers').textContent = stats.total_users.toLocaleString();
+            document.getElementById('totalProjects').textContent = stats.total_projects.toLocaleString();
+            document.getElementById('totalStudios').textContent = stats.total_studios.toLocaleString();
+            document.getElementById('totalComments').textContent = stats.total_comments.toLocaleString();
+        } else {
+            throw new Error('Failed to fetch from Scratch API');
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        // Fallback to mock data if API fails
         const stats = {
             users: Math.floor(Math.random() * 100000000) + 50000000,
             projects: Math.floor(Math.random() * 50000000) + 25000000,
@@ -228,8 +306,6 @@ async function loadPublicStats() {
         document.getElementById('totalProjects').textContent = stats.projects.toLocaleString();
         document.getElementById('totalStudios').textContent = stats.studios.toLocaleString();
         document.getElementById('totalComments').textContent = stats.comments.toLocaleString();
-    } catch (error) {
-        console.error('Error loading stats:', error);
     }
 }
 
