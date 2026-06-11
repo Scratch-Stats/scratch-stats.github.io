@@ -74,10 +74,11 @@ function setupEventListeners() {
         btn.addEventListener('click', switchTab);
     });
 
-    // Search functionality - Fixed: removed reference to non-existent searchBtn
+    // Search functionality - FIXED: properly setup all search event listeners
     const searchInput = document.getElementById('searchInput');
     const searchFilterToggle = document.querySelector('.search-filter-toggle');
     const searchFilters = document.querySelector('.search-filters');
+    const searchWrapper = document.querySelector('.search-wrapper');
 
     // Toggle search filters
     if (searchFilterToggle) {
@@ -89,10 +90,13 @@ function setupEventListeners() {
         });
     }
 
-    // Close filters when clicking elsewhere
+    // Close filters and suggestions when clicking outside
     document.addEventListener('click', (e) => {
-        if (!e.target.closest('.search-wrapper')) {
+        // Check if click is outside the search wrapper
+        if (!searchWrapper.contains(e.target)) {
             if (searchFilters) searchFilters.style.display = 'none';
+            const suggestionsDiv = document.getElementById('searchSuggestions');
+            if (suggestionsDiv) suggestionsDiv.style.display = 'none';
         }
     });
 
@@ -106,7 +110,16 @@ function setupEventListeners() {
 
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                e.preventDefault();
                 performSearch();
+            }
+        });
+
+        // Clear suggestions on focus
+        searchInput.addEventListener('focus', () => {
+            const suggestionsDiv = document.getElementById('searchSuggestions');
+            if (suggestionsDiv && searchInput.value.length > 0) {
+                updateSearchSuggestions();
             }
         });
     }
@@ -165,7 +178,7 @@ async function performSearch() {
     }
 
     const searchResults = document.getElementById('searchResults');
-    searchResults.innerHTML = '<p class="loading">Searching...</p>';
+    searchResults.innerHTML = '<p class="loading">🔍 Searching...</p>';
     document.getElementById('searchModal').style.display = 'block';
 
     try {
@@ -181,7 +194,7 @@ async function performSearch() {
 
         // Display projects
         if (projectsData && projectsData.length > 0) {
-            html += '<h3>Projects</h3><div class="search-results-list">';
+            html += '<h3>🎮 Projects</h3><div class="search-results-list">';
             projectsData.forEach(project => {
                 html += `
                     <div class="search-result-item">
@@ -197,7 +210,7 @@ async function performSearch() {
 
         // Display users
         if (usersData && usersData.length > 0) {
-            html += '<h3>Users</h3><div class="search-results-list">';
+            html += '<h3>👥 Users</h3><div class="search-results-list">';
             usersData.forEach(user => {
                 html += `
                     <div class="search-result-item">
@@ -217,7 +230,7 @@ async function performSearch() {
         searchResults.innerHTML = html;
     } catch (error) {
         console.error('Search error:', error);
-        searchResults.innerHTML = '<p class="error">Error performing search. Please try again.</p>';
+        searchResults.innerHTML = '<p class="error">❌ Error performing search. Please try again.</p>';
     }
 }
 
