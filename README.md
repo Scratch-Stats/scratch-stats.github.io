@@ -18,7 +18,7 @@ A comprehensive statistics and analytics platform for the Scratch community, pow
 - **HTML5**: Semantic markup and structure
 - **CSS3**: Modern styling with responsive design
 - **JavaScript (Vanilla)**: Interactive functionality without frameworks
-- **Language Composition**: JavaScript (56.7%), CSS (26.4%), HTML (16.9%)
+- **Language Composition**: JavaScript (67.2%), CSS (19.8%), HTML (13%)
 
 ### Backend
 - **Node.js**: Server runtime
@@ -174,6 +174,14 @@ Scratch-Stats/
 - Scratchdb: https://scratchdb.org/
 
 ## 📋 Changelog
+
+### v1.1.0 - Search Bar Fixes & Improvements
+- 🐛 **Fixed**: Search bar event listener delegation and click-outside detection
+- ✅ **Enhanced**: Search filter toggle positioning and mobile responsiveness
+- ✅ **Improved**: Dropdown positioning on smaller screens
+- ✅ **Added**: Proper focus handling for search input
+- ✅ **Fixed**: CSS styling for filter button alignment
+- ✅ **Updated**: Language composition stats in documentation
 
 ### v1.0.0 - Initial Release
 - ✅ Backend Express server with full Scratch API integration
