@@ -1,7 +1,7 @@
 // Global state
 let isLoggedIn = false;
 let currentUser = null;
-const adminUsername = 'Admin1';
+const adminUsername = 'Duke_Scratch56';
 
 // Mock data storage
 let appData = {
