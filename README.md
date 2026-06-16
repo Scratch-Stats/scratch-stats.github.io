@@ -121,13 +121,6 @@ curl "http://localhost:3000/api/search/projects?q=platformer&limit=5"
 curl http://localhost:3000/api/stats/trending?limit=10
 ```
 
-## 🔐 Admin Login
-
-**Username**: `Admin1`
-**Password**: `Scratch@Admin2024!Secure`
-
-⚠️ **Security Note**: Change these credentials in production and implement proper authentication.
-
 ## 📊 Data Management
 
 - Featured content is stored in browser `localStorage`
