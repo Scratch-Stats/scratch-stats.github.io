@@ -3,6 +3,9 @@ let isLoggedIn = false;
 let currentUser = null;
 const adminUsername = 'Duke_Scratch56';
 
+// Backend URL
+const BACKEND = "https://scratch-stats-backend.onrender.com";
+
 // Mock data storage
 let appData = {
     verifiedUsers: [],
@@ -36,71 +39,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Setup event listeners
 function setupEventListeners() {
-    // Login modal
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const loginModal = document.getElementById('loginModal');
     const closeBtn = document.querySelector('.close');
     const loginForm = document.getElementById('loginForm');
 
-    if (loginBtn) {
-        loginBtn.addEventListener('click', () => {
-            loginModal.style.display = 'block';
-        });
-    }
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', logout);
-    }
-
-    if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
-            loginModal.style.display = 'none';
-        });
-    }
+    if (loginBtn) loginBtn.addEventListener('click', () => loginModal.style.display = 'block');
+    if (logoutBtn) logoutBtn.addEventListener('click', logout);
+    if (closeBtn) closeBtn.addEventListener('click', () => loginModal.style.display = 'none');
 
     window.addEventListener('click', (e) => {
-        if (e.target === loginModal) {
-            loginModal.style.display = 'none';
-        }
+        if (e.target === loginModal) loginModal.style.display = 'none';
     });
 
-    if (loginForm) {
-        loginForm.addEventListener('submit', handleLogin);
-    }
+    if (loginForm) loginForm.addEventListener('submit', handleLogin);
 
-    // Tab switching
+    // Tabs
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', switchTab);
     });
 
-    // Search functionality - FIXED: properly setup all search event listeners
+    // Search
     const searchInput = document.getElementById('searchInput');
     const searchFilterToggle = document.querySelector('.search-filter-toggle');
     const searchFilters = document.querySelector('.search-filters');
     const searchWrapper = document.querySelector('.search-wrapper');
 
-    // Toggle search filters
     if (searchFilterToggle) {
         searchFilterToggle.addEventListener('click', (e) => {
             e.stopPropagation();
-            if (searchFilters) {
-                searchFilters.style.display = searchFilters.style.display === 'none' ? 'block' : 'none';
-            }
+            searchFilters.style.display =
+                searchFilters.style.display === 'none' ? 'block' : 'none';
         });
     }
 
-    // Close filters and suggestions when clicking outside
     document.addEventListener('click', (e) => {
-        // Check if click is outside the search wrapper
         if (!searchWrapper.contains(e.target)) {
-            if (searchFilters) searchFilters.style.display = 'none';
+            searchFilters.style.display = 'none';
             const suggestionsDiv = document.getElementById('searchSuggestions');
-            if (suggestionsDiv) suggestionsDiv.style.display = 'none';
+            suggestionsDiv.style.display = 'none';
         }
     });
 
-    // Search on input with debounce for suggestions
     if (searchInput) {
         let searchTimeout;
         searchInput.addEventListener('input', () => {
@@ -115,7 +96,6 @@ function setupEventListeners() {
             }
         });
 
-        // Clear suggestions on focus
         searchInput.addEventListener('focus', () => {
             const suggestionsDiv = document.getElementById('searchSuggestions');
             if (suggestionsDiv && searchInput.value.length > 0) {
@@ -125,7 +105,7 @@ function setupEventListeners() {
     }
 }
 
-// Update search suggestions as user types
+// Update search suggestions
 async function updateSearchSuggestions() {
     const query = document.getElementById('searchInput').value.trim();
     const suggestionsDiv = document.getElementById('searchSuggestions');
@@ -136,32 +116,29 @@ async function updateSearchSuggestions() {
     }
 
     try {
-        // Get project suggestions
-        const projectsResponse = await fetch(`https://api.scratch.mit.edu/search/projects?q=${encodeURIComponent(query)}&limit=3`);
+        const projectsResponse = await fetch(
+            `${BACKEND}/api/search/projects?q=${encodeURIComponent(query)}&limit=3`
+        );
         const projectsData = await projectsResponse.json();
 
         let html = '';
-        if (projectsData && projectsData.length > 0) {
+        if (projectsData.length > 0) {
             projectsData.slice(0, 3).forEach(project => {
-                html += `<div class="suggestion-item" onclick="selectSuggestion('${project.title.replace(/'/g, "\\'")}')">
-                    <i class="fas fa-project-diagram"></i> ${project.title}
-                </div>`;
+                html += `
+                    <div class="suggestion-item" onclick="selectSuggestion('${project.title.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-project-diagram"></i> ${project.title}
+                    </div>`;
             });
         }
 
-        if (html) {
-            suggestionsDiv.innerHTML = html;
-            suggestionsDiv.style.display = 'block';
-        } else {
-            suggestionsDiv.style.display = 'none';
-        }
+        suggestionsDiv.innerHTML = html;
+        suggestionsDiv.style.display = html ? 'block' : 'none';
     } catch (error) {
         console.error('Error fetching suggestions:', error);
         suggestionsDiv.style.display = 'none';
     }
 }
 
-// Select a suggestion and perform search
 function selectSuggestion(suggestion) {
     document.getElementById('searchInput').value = suggestion;
     document.getElementById('searchSuggestions').style.display = 'none';
@@ -171,7 +148,6 @@ function selectSuggestion(suggestion) {
 // Perform search
 async function performSearch() {
     const query = document.getElementById('searchInput').value.trim();
-    
     if (!query) {
         alert('Please enter a search term');
         return;
@@ -182,18 +158,20 @@ async function performSearch() {
     document.getElementById('searchModal').style.display = 'block';
 
     try {
-        // Search for projects
-        const projectsResponse = await fetch(`https://api.scratch.mit.edu/search/projects?q=${encodeURIComponent(query)}&limit=5`);
+        const projectsResponse = await fetch(
+            `${BACKEND}/api/search/projects?q=${encodeURIComponent(query)}&limit=5`
+        );
         const projectsData = await projectsResponse.json();
 
-        // Search for users
-        const usersResponse = await fetch(`https://api.scratch.mit.edu/search/users?q=${encodeURIComponent(query)}&limit=5`);
+        const usersResponse = await fetch(
+            `${BACKEND}/api/search/users?q=${encodeURIComponent(query)}&limit=5`
+        );
         const usersData = await usersResponse.json();
 
         let html = '';
 
-        // Display projects
-        if (projectsData && projectsData.length > 0) {
+        // Projects
+        if (projectsData.length > 0) {
             html += '<h3>🎮 Projects</h3><div class="search-results-list">';
             projectsData.forEach(project => {
                 html += `
@@ -202,14 +180,13 @@ async function performSearch() {
                         <p>By <strong>@${project.creator.username}</strong></p>
                         <p>❤️ ${project.stats.favorites} | 💬 ${project.stats.comments}</p>
                         <a href="https://scratch.mit.edu/projects/${project.id}/" target="_blank" class="result-link">View Project →</a>
-                    </div>
-                `;
+                    </div>`;
             });
             html += '</div>';
         }
 
-        // Display users
-        if (usersData && usersData.length > 0) {
+        // Users
+        if (usersData.length > 0) {
             html += '<h3>👥 Users</h3><div class="search-results-list">';
             usersData.forEach(user => {
                 html += `
@@ -217,14 +194,13 @@ async function performSearch() {
                         <h4>@${user.username}</h4>
                         <p>ID: ${user.id}</p>
                         <a href="https://scratch.mit.edu/users/${user.username}/" target="_blank" class="result-link">View Profile →</a>
-                    </div>
-                `;
+                    </div>`;
             });
             html += '</div>';
         }
 
-        if (!projectsData || projectsData.length === 0 && (!usersData || usersData.length === 0)) {
-            html = '<p class="no-results">No results found for "' + query + '"</p>';
+        if (!html) {
+            html = `<p class="no-results">No results found for "${query}"</p>`;
         }
 
         searchResults.innerHTML = html;
@@ -234,12 +210,11 @@ async function performSearch() {
     }
 }
 
-// Close search modal
 function closeSearchModal() {
     document.getElementById('searchModal').style.display = 'none';
 }
 
-// Handle login
+// Login
 function handleLogin(e) {
     e.preventDefault();
     const username = document.getElementById('username').value;
@@ -253,8 +228,6 @@ function handleLogin(e) {
         document.getElementById('loginModal').style.display = 'none';
         updateUIState();
         loadAdminPanel();
-        document.getElementById('username').value = '';
-        document.getElementById('password').value = '';
         errorDiv.style.display = 'none';
     } else {
         errorDiv.textContent = 'Invalid username or password';
@@ -262,7 +235,6 @@ function handleLogin(e) {
     }
 }
 
-// Logout
 function logout() {
     isLoggedIn = false;
     currentUser = null;
@@ -271,24 +243,16 @@ function logout() {
     document.getElementById('adminPanel').style.display = 'none';
 }
 
-// Update UI state based on login
 function updateUIState() {
     const loginBtn = document.getElementById('loginBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     const adminPanel = document.getElementById('adminPanel');
 
-    if (isLoggedIn) {
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'block';
-        adminPanel.style.display = 'block';
-    } else {
-        loginBtn.style.display = 'block';
-        logoutBtn.style.display = 'none';
-        adminPanel.style.display = 'none';
-    }
+    loginBtn.style.display = isLoggedIn ? 'none' : 'block';
+    logoutBtn.style.display = isLoggedIn ? 'block' : 'none';
+    adminPanel.style.display = isLoggedIn ? 'block' : 'none';
 }
 
-// Check if session is still valid
 function checkSession() {
     const session = sessionStorage.getItem('adminSession');
     if (session) {
@@ -304,12 +268,10 @@ function checkSession() {
     }
 }
 
-// Load public statistics - FIXED: Uses realistic data and properly updates DOM
+// Public stats
 function loadPublicStats() {
     console.log('Loading public statistics...');
     try {
-        // Generate realistic Scratch community statistics
-        // Based on public Scratch statistics (as of 2024+)
         const stats = {
             users: 250000000 + Math.floor(Math.random() * 50000000),
             projects: 180000000 + Math.floor(Math.random() * 30000000),
@@ -317,40 +279,17 @@ function loadPublicStats() {
             comments: 580000000 + Math.floor(Math.random() * 100000000)
         };
 
-        // Update DOM elements
-        const totalUsersEl = document.getElementById('totalUsers');
-        const totalProjectsEl = document.getElementById('totalProjects');
-        const totalStudiosEl = document.getElementById('totalStudios');
-        const totalCommentsEl = document.getElementById('totalComments');
-
-        if (totalUsersEl) {
-            totalUsersEl.textContent = stats.users.toLocaleString();
-            console.log('Updated totalUsers:', stats.users.toLocaleString());
-        }
-        if (totalProjectsEl) {
-            totalProjectsEl.textContent = stats.projects.toLocaleString();
-            console.log('Updated totalProjects:', stats.projects.toLocaleString());
-        }
-        if (totalStudiosEl) {
-            totalStudiosEl.textContent = stats.studios.toLocaleString();
-            console.log('Updated totalStudios:', stats.studios.toLocaleString());
-        }
-        if (totalCommentsEl) {
-            totalCommentsEl.textContent = stats.comments.toLocaleString();
-            console.log('Updated totalComments:', stats.comments.toLocaleString());
-        }
-
-        console.log('Statistics loaded successfully:', stats);
+        document.getElementById('totalUsers').textContent = stats.users.toLocaleString();
+        document.getElementById('totalProjects').textContent = stats.projects.toLocaleString();
+        document.getElementById('totalStudios').textContent = stats.studios.toLocaleString();
+        document.getElementById('totalComments').textContent = stats.comments.toLocaleString();
     } catch (error) {
         console.error('Error loading stats:', error);
-        // Fallback to mock data
         loadMockStats();
     }
 }
 
-// Load mock statistics as fallback
 function loadMockStats() {
-    console.log('Loading mock statistics...');
     const stats = {
         users: 250000000 + Math.floor(Math.random() * 50000000),
         projects: 180000000 + Math.floor(Math.random() * 30000000),
@@ -358,57 +297,49 @@ function loadMockStats() {
         comments: 580000000 + Math.floor(Math.random() * 100000000)
     };
 
-    const totalUsersEl = document.getElementById('totalUsers');
-    const totalProjectsEl = document.getElementById('totalProjects');
-    const totalStudiosEl = document.getElementById('totalStudios');
-    const totalCommentsEl = document.getElementById('totalComments');
-
-    if (totalUsersEl) totalUsersEl.textContent = stats.users.toLocaleString();
-    if (totalProjectsEl) totalProjectsEl.textContent = stats.projects.toLocaleString();
-    if (totalStudiosEl) totalStudiosEl.textContent = stats.studios.toLocaleString();
-    if (totalCommentsEl) totalCommentsEl.textContent = stats.comments.toLocaleString();
-
-    console.log('Using mock statistics:', stats);
+    document.getElementById('totalUsers').textContent = stats.users.toLocaleString();
+    document.getElementById('totalProjects').textContent = stats.projects.toLocaleString();
+    document.getElementById('totalStudios').textContent = stats.studios.toLocaleString();
+    document.getElementById('totalComments').textContent = stats.comments.toLocaleString();
 }
 
-// Load featured content with clickable links
+// Featured content
 function loadFeaturedContent() {
     const projectsDiv = document.getElementById('featuredProjects');
     const studiosDiv = document.getElementById('featuredStudios');
     const usersDiv = document.getElementById('featuredUsers');
 
     if (projectsDiv) {
-        projectsDiv.innerHTML = appData.featuredProjects.map(p => 
-            `<a href="https://scratch.mit.edu/projects/${p.id}/" target="_blank" class="featured-item featured-link"><strong>${p.title}</strong><p>ID: ${p.id}</p></a>`
-        ).join('') || '<p style="color:#999;">No featured projects yet</p>';
+        projectsDiv.innerHTML =
+            appData.featuredProjects.map(p =>
+                `<a href="https://scratch.mit.edu/projects/${p.id}/" target="_blank" class="featured-item featured-link"><strong>${p.title}</strong><p>ID: ${p.id}</p></a>`
+            ).join('') || '<p style="color:#999;">No featured projects yet</p>';
     }
 
     if (studiosDiv) {
-        studiosDiv.innerHTML = appData.featuredStudios.map(s => 
-            `<a href="https://scratch.mit.edu/studios/${s.id}/" target="_blank" class="featured-item featured-link"><strong>${s.title}</strong><p>ID: ${s.id}</p></a>`
-        ).join('') || '<p style="color:#999;">No featured studios yet</p>';
+        studiosDiv.innerHTML =
+            appData.featuredStudios.map(s =>
+                `<a href="https://scratch.mit.edu/studios/${s.id}/" target="_blank" class="featured-item featured-link"><strong>${s.title}</strong><p>ID: ${s.id}</p></a>`
+            ).join('') || '<p style="color:#999;">No featured studios yet</p>';
     }
 
     if (usersDiv) {
-        usersDiv.innerHTML = appData.featuredUsers.map(u => 
-            `<a href="https://scratch.mit.edu/users/${u.username}/" target="_blank" class="featured-item featured-link"><strong>@${u.username}</strong><p>✓ Verified</p></a>`
-        ).join('') || '<p style="color:#999;">No featured users yet</p>';
+        usersDiv.innerHTML =
+            appData.featuredUsers.map(u =>
+                `<a href="https://scratch.mit.edu/users/${u.username}/" target="_blank" class="featured-item featured-link"><strong>@${u.username}</strong><p>✓ Verified</p></a>`
+            ).join('') || '<p style="color:#999;">No featured users yet</p>';
     }
 }
 
-// Load admin panel
+// Admin panel
 function loadAdminPanel() {
     loadVerifiedUsers();
     loadManagedFeatured();
 }
 
-// Verify user
 function verifyUser() {
     const username = document.getElementById('verifyUsername').value.trim();
-    if (!username) {
-        alert('Please enter a username');
-        return;
-    }
+    if (!username) return alert('Please enter a username');
 
     if (!appData.verifiedUsers.includes(username)) {
         appData.verifiedUsers.push(username);
@@ -421,35 +352,30 @@ function verifyUser() {
     }
 }
 
-// Load verified users list
 function loadVerifiedUsers() {
     const list = document.getElementById('verifiedUsersList');
     if (list) {
-        list.innerHTML = appData.verifiedUsers.map(user => 
-            `<div class="list-item">
-                <span>✓ @${user}</span>
-                <button class="btn btn-danger" onclick="unverifyUser('${user}')">Remove</button>
-            </div>`
-        ).join('') || '<p style="color:#999;">No verified users yet</p>';
+        list.innerHTML =
+            appData.verifiedUsers.map(user =>
+                `<div class="list-item">
+                    <span>✓ @${user}</span>
+                    <button class="btn btn-danger" onclick="unverifyUser('${user}')">Remove</button>
+                </div>`
+            ).join('') || '<p style="color:#999;">No verified users yet</p>';
     }
 }
 
-// Unverify user
 function unverifyUser(username) {
     appData.verifiedUsers = appData.verifiedUsers.filter(u => u !== username);
     saveData();
     loadVerifiedUsers();
 }
 
-// Feature project
 function featureProject() {
     const id = document.getElementById('projectId').value.trim();
     const title = document.getElementById('projectTitle').value.trim();
 
-    if (!id || !title) {
-        alert('Please enter project ID and title');
-        return;
-    }
+    if (!id || !title) return alert('Please enter project ID and title');
 
     appData.featuredProjects.unshift({ id, title });
     if (appData.featuredProjects.length > 6) appData.featuredProjects.pop();
@@ -461,15 +387,11 @@ function featureProject() {
     alert(`✓ Project "${title}" featured!`);
 }
 
-// Feature studio
 function featureStudio() {
     const id = document.getElementById('studioId').value.trim();
     const title = document.getElementById('studioTitle').value.trim();
 
-    if (!id || !title) {
-        alert('Please enter studio ID and title');
-        return;
-    }
+    if (!id || !title) return alert('Please enter studio ID and title');
 
     appData.featuredStudios.unshift({ id, title });
     if (appData.featuredStudios.length > 6) appData.featuredStudios.pop();
@@ -481,14 +403,9 @@ function featureStudio() {
     alert(`✓ Studio "${title}" featured!`);
 }
 
-// Feature user
 function featureUser() {
     const username = document.getElementById('userId').value.trim();
-
-    if (!username) {
-        alert('Please enter a username');
-        return;
-    }
+    if (!username) return alert('Please enter a username');
 
     appData.featuredUsers.unshift({ username });
     if (appData.featuredUsers.length > 6) appData.featuredUsers.pop();
@@ -499,70 +416,69 @@ function featureUser() {
     alert(`✓ @${username} featured!`);
 }
 
-// Load managed featured content
 function loadManagedFeatured() {
     const projectsDiv = document.getElementById('manageFeaturedProjects');
     const studiosDiv = document.getElementById('manageFeaturedStudios');
     const usersDiv = document.getElementById('manageFeaturedUsers');
 
     if (projectsDiv) {
-        projectsDiv.innerHTML = appData.featuredProjects.map((p, i) => 
-            `<div class="manage-item">
-                <span>${p.title}</span>
-                <button class="btn btn-danger" onclick="removeFeature('projects', ${i})">Remove</button>
-            </div>`
-        ).join('') || '<p style="color:#999;">No featured projects</p>';
+        projectsDiv.innerHTML =
+            appData.featuredProjects.map((p, i) =>
+                `<div class="manage-item">
+                    <span>${p.title}</span>
+                    <button class="btn btn-danger" onclick="removeFeature('projects', ${i})">Remove</button>
+                </div>`
+            ).join('') || '<p style="color:#999;">No featured projects</p>';
     }
 
     if (studiosDiv) {
-        studiosDiv.innerHTML = appData.featuredStudios.map((s, i) => 
-            `<div class="manage-item">
-                <span>${s.title}</span>
-                <button class="btn btn-danger" onclick="removeFeature('studios', ${i})">Remove</button>
-            </div>`
-        ).join('') || '<p style="color:#999;">No featured studios</p>';
+        studiosDiv.innerHTML =
+            appData.featuredStudios.map((s, i) =>
+                `<div class="manage-item">
+                    <span>${s.title}</span>
+                    <button class="btn btn-danger" onclick="removeFeature('studios', ${i})">Remove</button>
+                </div>`
+            ).join('') || '<p style="color:#999;">No featured studios</p>';
     }
 
     if (usersDiv) {
-        usersDiv.innerHTML = appData.featuredUsers.map((u, i) => 
-            `<div class="manage-item">
-                <span>@${u.username}</span>
-                <button class="btn btn-danger" onclick="removeFeature('users', ${i})">Remove</button>
-            </div>`
-        ).join('') || '<p style="color:#999;">No featured users</p>';
+        usersDiv.innerHTML =
+            appData.featuredUsers.map((u, i) =>
+                `<div class="manage-item">
+                    <span>@${u.username}</span>
+                    <button class="btn btn-danger" onclick="removeFeature('users', ${i})">Remove</button>
+                </div>`
+            ).join('') || '<p style="color:#999;">No featured users</p>';
     }
 }
 
-// Remove featured item
 function removeFeature(type, index) {
     if (type === 'projects') appData.featuredProjects.splice(index, 1);
-    else if (type === 'studios') appData.featuredStudios.splice(index, 1);
-    else if (type === 'users') appData.featuredUsers.splice(index, 1);
+    if (type === 'studios') appData.featuredStudios.splice(index, 1);
+    if (type === 'users') appData.featuredUsers.splice(index, 1);
+
     saveData();
     loadFeaturedContent();
     loadManagedFeatured();
 }
 
-// Switch tabs
+// Tabs
 function switchTab(e) {
     const tabName = e.target.getAttribute('data-tab');
-    
-    // Remove active class from all buttons and content
+
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    // Add active class to clicked button and its content
+
     e.target.classList.add('active');
-    const tabContent = document.getElementById(tabName);
-    if (tabContent) tabContent.classList.add('active');
+    document.getElementById(tabName).classList.add('active');
 }
 
-// Session management
+// Session
 function createSession() {
     const session = {
         username: currentUser,
         createdAt: new Date(),
-        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hour expiry
+        expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
     };
     sessionStorage.setItem('adminSession', JSON.stringify(session));
 }
@@ -571,5 +487,5 @@ function clearSession() {
     sessionStorage.removeItem('adminSession');
 }
 
-// Auto-refresh stats every 5 minutes
+// Auto-refresh stats
 setInterval(loadPublicStats, 5 * 60 * 1000);
