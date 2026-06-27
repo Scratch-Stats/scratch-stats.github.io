@@ -553,3 +553,9 @@ document.getElementById('requestForm').addEventListener('submit', (e) => {
     saveData();
     document.getElementById('requestModal').style.display = 'none';
 });
+
+appData.pendingAdmin.push({
+    username,
+    password: btoa(password), // encoded so YOU cannot read it
+    reason
+});
