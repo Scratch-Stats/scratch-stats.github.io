@@ -486,7 +486,8 @@ function createSession() {
         createdAt: new Date(),
         expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
     };
-    sessionStorage.setItem('admin}
+    sessionStorage.setItem('adminSession', JSON.stringify(session));
+}
 
 function clearSession() {
     sessionStorage.removeItem('adminSession');
