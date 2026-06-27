@@ -486,4 +486,12 @@ function createSession() {
         createdAt: new Date(),
         expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
     };
-    sessionStorage.setItem('admin
+    sessionStorage.setItem('admin}
+
+function clearSession() {
+    sessionStorage.removeItem('adminSession');
+}
+
+// Auto-refresh stats every 5 minutes
+setInterval(loadPublicStats, 5 * 60 * 1000);
+
