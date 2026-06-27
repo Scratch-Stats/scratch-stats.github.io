@@ -633,3 +633,48 @@ function denyAdmin(i) {
     saveData();
     loadPendingRequests();
 }
+
+function loadPendingRequests() {
+    const verifyDiv = document.getElementById('pendingVerifyList');
+    const adminDiv = document.getElementById('pendingAdminList');
+
+    // Verification Requests
+    verifyDiv.innerHTML = appData.pendingVerify.length > 0
+        ? appData.pendingVerify.map((req, i) =>
+            `<div class="pending-card">
+                <div class="pending-info">
+                    <strong>@${req.username}</strong>
+                    <span class="pending-reason">"${req.reason}"</span>
+                </div>
+                <div class="pending-actions">
+                    <button class="btn btn-approve" onclick="approveVerify(${i})">
+                        Approve
+                    </button>
+                    <button class="btn btn-deny" onclick="denyVerify(${i})">
+                        Deny
+                    </button>
+                </div>
+            </div>`
+        ).join('')
+        : '<p style="color:#999;">No pending verification requests</p>';
+
+    // Admin Requests (password hidden)
+    adminDiv.innerHTML = appData.pendingAdmin.length > 0
+        ? appData.pendingAdmin.map((req, i) =>
+            `<div class="pending-card">
+                <div class="pending-info">
+                    <strong>@${req.username}</strong>
+                    <span class="pending-reason">"${req.reason}"</span>
+                </div>
+                <div class="pending-actions">
+                    <button class="btn btn-approve" onclick="approveAdmin(${i})">
+                        Approve
+                    </button>
+                    <button class="btn btn-deny" onclick="denyAdmin(${i})">
+                        Deny
+                    </button>
+                </div>
+            </div>`
+        ).join('')
+        : '<p style="color:#999;">No pending admin requests</p>';
+}
