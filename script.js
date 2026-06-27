@@ -341,6 +341,7 @@ function loadFeaturedContent() {
 function loadAdminPanel() {
     loadVerifiedUsers();
     loadManagedFeatured();
+    loadPendingRequests();
 }
 
 function verifyUser() {
