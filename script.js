@@ -654,3 +654,4 @@ function denyAdmin(i) {
     saveData();
     loadPendingRequests();
 }
+}
