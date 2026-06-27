@@ -52,20 +52,20 @@
                 </button>
                 <!-- Request Modal -->
 <div id="requestModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content request-modal">
         <span class="close-request">&times;</span>
         <h2 id="requestTitle"></h2>
 
         <form id="requestForm">
-            <input type="text" id="requestUsername" placeholder="Your Scratch Username" required>
+            <input type="text" id="requestUsername" class="modal-input" placeholder="Your Scratch Username" required>
 
             <div id="passwordField" style="display:none;">
-                <input type="text" id="requestPassword" placeholder="Choose a password (not your real one)" required>
+                <input type="password" id="requestPassword" class="modal-input" placeholder="Choose a password" required>
             </div>
 
-            <textarea id="requestReason" placeholder="Why do you want this?" required></textarea>
+            <textarea id="requestReason" class="modal-textarea" placeholder="Why do you want this?" required></textarea>
 
-            <button type="submit" class="btn btn-primary">Submit Request</button>
+            <button type="submit" class="btn btn-primary modal-submit">Submit Request</button>
         </form>
     </div>
 </div>
