@@ -266,7 +266,7 @@ function handleLogin(e) {
     const errorDiv = document.getElementById("loginError");
 
     // 🔥 Insert your real password HERE safely:
-    const ADMIN_PASSWORD = "YOUR_PASSWORD_HERE";
+    const ADMIN_PASSWORD = "ScratchStats!!!2026is-the-best";
 
     if (username === adminUsername && password === ADMIN_PASSWORD) {
         isLoggedIn = true;
