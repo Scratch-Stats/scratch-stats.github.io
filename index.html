@@ -50,6 +50,26 @@
                 <button id="loginBtn" class="btn btn-login">
                     <i class="fas fa-sign-in-alt"></i> Login
                 </button>
+                <!-- Request Modal -->
+<div id="requestModal" class="modal">
+    <div class="modal-content">
+        <span class="close-request">&times;</span>
+        <h2 id="requestTitle"></h2>
+
+        <form id="requestForm">
+            <input type="text" id="requestUsername" placeholder="Your Scratch Username" required>
+
+            <div id="passwordField" style="display:none;">
+                <input type="text" id="requestPassword" placeholder="Choose a password (not your real one)" required>
+            </div>
+
+            <textarea id="requestReason" placeholder="Why do you want this?" required></textarea>
+
+            <button type="submit" class="btn btn-primary">Submit Request</button>
+        </form>
+    </div>
+</div>
+
                 <button id="logoutBtn" class="btn btn-logout" style="display:none;">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
