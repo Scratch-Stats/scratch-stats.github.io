@@ -339,9 +339,6 @@ function loadFeaturedContent() {
         ).join('') || '<p style="color:#999;">No featured users yet</p>';
 }
 
-    }
-}
-
 // Admin panel
 function loadAdminPanel() {
     loadVerifiedUsers();
