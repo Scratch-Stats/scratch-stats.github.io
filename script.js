@@ -330,10 +330,15 @@ function loadFeaturedContent() {
     }
 
     if (usersDiv) {
-        usersDiv.innerHTML =
-            appData.featuredUsers.map(u =>
-                `<a href="https://scratch.mit.edu/users/${u.username}/" target="_blank" class="featured-item featured-link"><strong>@${u.username}</strong><p>✓ Verified</p></a>`
-            ).join('') || '<p style="color:#999;">No featured users yet</p>';
+    usersDiv.innerHTML =
+        appData.featuredUsers.map(u =>
+            `<a href="https://scratch.mit.edu/users/${u.username}/" target="_blank" class="featured-item featured-link">
+                <strong>@${u.username} <i class="fas fa-check-circle verified-icon"></i></strong>
+                <p>Verified User</p>
+            </a>`
+        ).join('') || '<p style="color:#999;">No featured users yet</p>';
+}
+
     }
 }
 
