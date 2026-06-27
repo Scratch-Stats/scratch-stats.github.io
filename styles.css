@@ -800,3 +800,83 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #5568d3;
 }
+
+/* Section Titles */
+.pending-title {
+    margin-top: 30px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #333;
+}
+
+/* Pending Request List */
+.pending-list {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Individual Request Card */
+.pending-card {
+    background: #fff;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.2s ease;
+}
+
+.pending-card:hover {
+    transform: scale(1.02);
+}
+
+/* Request Info */
+.pending-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pending-info strong {
+    font-size: 17px;
+    color: #222;
+}
+
+.pending-reason {
+    font-size: 14px;
+    color: #666;
+}
+
+/* Buttons */
+.pending-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.pending-actions .btn {
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.btn-approve {
+    background: #4CAF50;
+    color: white;
+}
+
+.btn-approve:hover {
+    background: #45a049;
+}
+
+.btn-deny {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-deny:hover {
+    background: #c0392b;
+}
