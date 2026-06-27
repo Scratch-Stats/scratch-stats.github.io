@@ -29,7 +29,6 @@ function saveData() {
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM Content Loaded - Initializing app');
     loadData();
     setupEventListeners();
     loadPublicStats();
@@ -124,9 +123,10 @@ async function updateSearchSuggestions() {
         let html = '';
         if (projectsData.length > 0) {
             projectsData.slice(0, 3).forEach(project => {
+                const title = project.title || "Untitled";
                 html += `
-                    <div class="suggestion-item" onclick="selectSuggestion('${project.title.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-project-diagram"></i> ${project.title}
+                    <div class="suggestion-item" onclick="selectSuggestion('${title.replace(/'/g, "\\'")}')">
+                        <i class="fas fa-project-diagram"></i> ${title}
                     </div>`;
             });
         }
@@ -174,11 +174,16 @@ async function performSearch() {
         if (projectsData.length > 0) {
             html += '<h3>🎮 Projects</h3><div class="search-results-list">';
             projectsData.forEach(project => {
+                const title = project.title || "Untitled";
+                const creator = project.creator?.username || "Unknown";
+                const favorites = project.stats?.favorites || 0;
+                const comments = project.stats?.comments || 0;
+
                 html += `
                     <div class="search-result-item">
-                        <h4>${project.title}</h4>
-                        <p>By <strong>@${project.creator.username}</strong></p>
-                        <p>❤️ ${project.stats.favorites} | 💬 ${project.stats.comments}</p>
+                        <h4>${title}</h4>
+                        <p>By <strong>@${creator}</strong></p>
+                        <p>❤️ ${favorites} | 💬 ${comments}</p>
                         <a href="https://scratch.mit.edu/projects/${project.id}/" target="_blank" class="result-link">View Project →</a>
                     </div>`;
             });
@@ -189,11 +194,14 @@ async function performSearch() {
         if (usersData.length > 0) {
             html += '<h3>👥 Users</h3><div class="search-results-list">';
             usersData.forEach(user => {
+                const username = user.username || "Unknown";
+                const id = user.id || "N/A";
+
                 html += `
                     <div class="search-result-item">
-                        <h4>@${user.username}</h4>
-                        <p>ID: ${user.id}</p>
-                        <a href="https://scratch.mit.edu/users/${user.username}/" target="_blank" class="result-link">View Profile →</a>
+                        <h4>@${username}</h4>
+                        <p>ID: ${id}</p>
+                        <a href="https://scratch.mit.edu/users/${username}/" target="_blank" class="result-link">View Profile →</a>
                     </div>`;
             });
             html += '</div>';
@@ -270,7 +278,6 @@ function checkSession() {
 
 // Public stats
 function loadPublicStats() {
-    console.log('Loading public statistics...');
     try {
         const stats = {
             users: 250000000 + Math.floor(Math.random() * 50000000),
@@ -284,7 +291,6 @@ function loadPublicStats() {
         document.getElementById('totalStudios').textContent = stats.studios.toLocaleString();
         document.getElementById('totalComments').textContent = stats.comments.toLocaleString();
     } catch (error) {
-        console.error('Error loading stats:', error);
         loadMockStats();
     }
 }
@@ -480,12 +486,4 @@ function createSession() {
         createdAt: new Date(),
         expiry: new Date(Date.now() + 24 * 60 * 60 * 1000)
     };
-    sessionStorage.setItem('adminSession', JSON.stringify(session));
-}
-
-function clearSession() {
-    sessionStorage.removeItem('adminSession');
-}
-
-// Auto-refresh stats
-setInterval(loadPublicStats, 5 * 60 * 1000);
+    sessionStorage.setItem('admin
