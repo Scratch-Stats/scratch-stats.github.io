@@ -559,3 +559,77 @@ appData.pendingAdmin.push({
     password: btoa(password), // encoded so YOU cannot read it
     reason
 });
+
+// Ensure storage exists
+appData.pendingVerify = appData.pendingVerify || [];
+appData.pendingAdmin = appData.pendingAdmin || [];
+appData.adminAccounts = appData.adminAccounts || [];
+
+// Load pending requests into admin panel
+function loadPendingRequests() {
+    const verifyDiv = document.getElementById('pendingVerifyList');
+    const adminDiv = document.getElementById('pendingAdminList');
+
+    // Verification Requests
+    verifyDiv.innerHTML = appData.pendingVerify.length > 0
+        ? appData.pendingVerify.map((req, i) =>
+            `<div class="list-item">
+                <span><strong>@${req.username}</strong> — "${req.reason}"</span>
+                <button class="btn btn-primary" onclick="approveVerify(${i})">Approve</button>
+                <button class="btn btn-danger" onclick="denyVerify(${i})">Deny</button>
+            </div>`
+        ).join('')
+        : '<p style="color:#999;">No pending verification requests</p>';
+
+    // Admin Requests (password hidden)
+    adminDiv.innerHTML = appData.pendingAdmin.length > 0
+        ? appData.pendingAdmin.map((req, i) =>
+            `<div class="list-item">
+                <span><strong>@${req.username}</strong> — "${req.reason}"</span>
+                <button class="btn btn-primary" onclick="approveAdmin(${i})">Approve</button>
+                <button class="btn btn-danger" onclick="denyAdmin(${i})">Deny</button>
+            </div>`
+        ).join('')
+        : '<p style="color:#999;">No pending admin requests</p>';
+}
+
+// Approve verification
+function approveVerify(i) {
+    const user = appData.pendingVerify[i].username;
+    appData.verifiedUsers.push(user);
+    appData.pendingVerify.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+    loadVerifiedUsers();
+    alert(`@${user} is now verified!`);
+}
+
+// Deny verification
+function denyVerify(i) {
+    appData.pendingVerify.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+}
+
+// Approve admin request (password stays hidden)
+function approveAdmin(i) {
+    const req = appData.pendingAdmin[i];
+
+    appData.adminAccounts.push({
+        username: req.username,
+        password: req.password, // still hidden (encoded)
+        reason: req.reason
+    });
+
+    appData.pendingAdmin.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+    alert(`@${req.username} is now an admin!`);
+}
+
+// Deny admin request
+function denyAdmin(i) {
+    appData.pendingAdmin.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+}
