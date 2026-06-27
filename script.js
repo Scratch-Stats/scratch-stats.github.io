@@ -31,6 +31,10 @@ function loadData() {
         appData.pendingVerify ||= [];
         appData.pendingAdmin ||= [];
         appData.adminAccounts ||= [];
+        appData.verifiedUsers ||= [];
+        appData.featuredProjects ||= [];
+        appData.featuredStudios ||= [];
+        appData.featuredUsers ||= [];
     }
 }
 
@@ -93,7 +97,8 @@ function setupEventListeners() {
     document.addEventListener("click", (e) => {
         if (!searchWrapper.contains(e.target)) {
             searchFilters.style.display = "none";
-            document.getElementById("searchSuggestions").style.display = "none";
+            const suggestionsDiv = document.getElementById("searchSuggestions");
+            if (suggestionsDiv) suggestionsDiv.style.display = "none";
         }
     });
 
@@ -117,6 +122,30 @@ function setupEventListeners() {
                 updateSearchSuggestions();
             }
         });
+    }
+
+    // Request modal buttons (if present)
+    const closeRequest = document.querySelector(".close-request");
+    const requestVerifyBtn = document.getElementById("requestVerifyBtn");
+    const requestAdminBtn = document.getElementById("requestAdminBtn");
+    const requestForm = document.getElementById("requestForm");
+
+    if (closeRequest) {
+        closeRequest.addEventListener("click", () => {
+            document.getElementById("requestModal").style.display = "none";
+        });
+    }
+
+    if (requestVerifyBtn) {
+        requestVerifyBtn.addEventListener("click", () => openRequestModal("verify"));
+    }
+
+    if (requestAdminBtn) {
+        requestAdminBtn.addEventListener("click", () => openRequestModal("admin"));
+    }
+
+    if (requestForm) {
+        requestForm.addEventListener("submit", handleRequestForm);
     }
 }
 
@@ -150,7 +179,7 @@ async function updateSearchSuggestions() {
         suggestionsDiv.style.display = html ? "block" : "none";
 
     } catch (err) {
-        console.error(err);
+        console.error("Error fetching suggestions:", err);
         suggestionsDiv.style.display = "none";
     }
 }
@@ -216,7 +245,7 @@ async function performSearch() {
         searchResults.innerHTML = html || `<p class="no-results">No results found for "${query}"</p>`;
 
     } catch (err) {
-        console.error(err);
+        console.error("Search error:", err);
         searchResults.innerHTML = "<p class='error'>❌ Error performing search.</p>";
     }
 }
@@ -262,9 +291,13 @@ function logout() {
 }
 
 function updateUIState() {
-    document.getElementById("loginBtn").style.display = isLoggedIn ? "none" : "block";
-    document.getElementById("logoutBtn").style.display = isLoggedIn ? "block" : "none";
-    document.getElementById("adminPanel").style.display = isLoggedIn ? "block" : "none";
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const adminPanel = document.getElementById("adminPanel");
+
+    if (loginBtn) loginBtn.style.display = isLoggedIn ? "none" : "block";
+    if (logoutBtn) logoutBtn.style.display = isLoggedIn ? "block" : "none";
+    if (adminPanel) adminPanel.style.display = isLoggedIn ? "block" : "none";
 }
 
 function checkSession() {
@@ -360,10 +393,33 @@ function loadAdminPanel() {
 }
 
 // =========================
+// Rank Helpers
+// =========================
+
+function getCurrentRank() {
+    if (!currentUser) return null;
+    if (currentUser === adminUsername) return "Owner";
+
+    const admin = appData.adminAccounts.find(a => a.username === currentUser);
+    return admin?.rank || null;
+}
+
+function requireRank(allowedRanks, actionName) {
+    const rank = getCurrentRank();
+    if (!rank || !allowedRanks.includes(rank)) {
+        alert(`You do not have permission to ${actionName}.`);
+        return false;
+    }
+    return true;
+}
+
+// =========================
 // Verified Users
 // =========================
 
 function verifyUser() {
+    if (!requireRank(["Owner", "Admin", "Moderator"], "verify users")) return;
+
     const username = document.getElementById("verifyUsername").value.trim();
     if (!username) return alert("Enter a username");
 
@@ -391,6 +447,8 @@ function loadVerifiedUsers() {
 }
 
 function unverifyUser(username) {
+    if (!requireRank(["Owner", "Admin"], "remove verified users")) return;
+
     appData.verifiedUsers = appData.verifiedUsers.filter(u => u !== username);
     saveData();
     loadVerifiedUsers();
@@ -401,6 +459,8 @@ function unverifyUser(username) {
 // =========================
 
 function featureProject() {
+    if (!requireRank(["Owner", "Admin"], "feature projects")) return;
+
     const id = document.getElementById("projectId").value.trim();
     const title = document.getElementById("projectTitle").value.trim();
     if (!id || !title) return alert("Enter ID and title");
@@ -414,6 +474,8 @@ function featureProject() {
 }
 
 function featureStudio() {
+    if (!requireRank(["Owner", "Admin"], "feature studios")) return;
+
     const id = document.getElementById("studioId").value.trim();
     const title = document.getElementById("studioTitle").value.trim();
     if (!id || !title) return alert("Enter ID and title");
@@ -427,6 +489,8 @@ function featureStudio() {
 }
 
 function featureUser() {
+    if (!requireRank(["Owner", "Admin"], "feature users")) return;
+
     const username = document.getElementById("userId").value.trim();
     if (!username) return alert("Enter username");
 
@@ -475,6 +539,8 @@ function loadManagedFeatured() {
 }
 
 function removeFeature(type, index) {
+    if (!requireRank(["Owner", "Admin"], "remove featured content")) return;
+
     if (type === "projects") appData.featuredProjects.splice(index, 1);
     if (type === "studios") appData.featuredStudios.splice(index, 1);
     if (type === "users") appData.featuredUsers.splice(index, 1);
@@ -535,3 +601,148 @@ function openRequestModal(type) {
         modal.setAttribute("data-type", "admin");
     }
 }
+
+// =========================
+// Request Form Handling
+// =========================
+
+function handleRequestForm(e) {
+    e.preventDefault();
+
+    const type = document.getElementById("requestModal").getAttribute("data-type");
+    const username = document.getElementById("requestUsername").value.trim();
+    const reason = document.getElementById("requestReason").value.trim();
+    const password = document.getElementById("requestPassword").value.trim();
+
+    if (!username || !reason || (type === "admin" && !password)) {
+        alert("Please fill out all required fields.");
+        return;
+    }
+
+    if (type === "verify") {
+        appData.pendingVerify.push({ username, reason });
+        alert("Your verification request has been sent!");
+    } else {
+        appData.pendingAdmin.push({
+            username,
+            password: btoa(password),
+            reason,
+            rank: "Admin" // default rank for new admins
+        });
+        alert("Your admin request has been sent!");
+    }
+
+    saveData();
+    document.getElementById("requestModal").style.display = "none";
+    document.getElementById("requestForm").reset();
+    loadPendingRequests();
+}
+
+// =========================
+// Pending Requests (Cards)
+// =========================
+
+function loadPendingRequests() {
+    const verifyDiv = document.getElementById("pendingVerifyList");
+    const adminDiv = document.getElementById("pendingAdminList");
+
+    if (!verifyDiv || !adminDiv) return;
+
+    // Verification Requests
+    verifyDiv.innerHTML = appData.pendingVerify.length > 0
+        ? appData.pendingVerify.map((req, i) =>
+            `<div class="pending-card">
+                <div class="pending-info">
+                    <strong>@${req.username}</strong>
+                    <span class="pending-reason">"${req.reason}"</span>
+                </div>
+                <div class="pending-actions">
+                    <button class="btn btn-approve" onclick="approveVerify(${i})">
+                        Approve
+                    </button>
+                    <button class="btn btn-deny" onclick="denyVerify(${i})">
+                        Deny
+                    </button>
+                </div>
+            </div>`
+        ).join("")
+        : '<p style="color:#999;">No pending verification requests</p>';
+
+    // Admin Requests
+    adminDiv.innerHTML = appData.pendingAdmin.length > 0
+        ? appData.pendingAdmin.map((req, i) =>
+            `<div class="pending-card">
+                <div class="pending-info">
+                    <strong>@${req.username}</strong>
+                    <span class="pending-reason">"${req.reason}"</span>
+                </div>
+                <div class="pending-actions">
+                    <button class="btn btn-approve" onclick="approveAdmin(${i})">
+                        Approve
+                    </button>
+                    <button class="btn btn-deny" onclick="denyAdmin(${i})">
+                        Deny
+                    </button>
+                </div>
+            </div>`
+        ).join("")
+        : '<p style="color:#999;">No pending admin requests</p>';
+}
+
+// =========================
+// Approve / Deny Requests
+// =========================
+
+function approveVerify(i) {
+    if (!requireRank(["Owner", "Admin", "Moderator"], "approve verification requests")) return;
+
+    const user = appData.pendingVerify[i].username;
+    if (!appData.verifiedUsers.includes(user)) {
+        appData.verifiedUsers.push(user);
+    }
+    appData.pendingVerify.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+    loadVerifiedUsers();
+    alert(`@${user} is now verified!`);
+}
+
+function denyVerify(i) {
+    if (!requireRank(["Owner", "Admin", "Moderator"], "deny verification requests")) return;
+
+    appData.pendingVerify.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+}
+
+function approveAdmin(i) {
+    if (!requireRank(["Owner"], "approve admin requests")) return;
+
+    const req = appData.pendingAdmin[i];
+
+    appData.adminAccounts.push({
+        username: req.username,
+        password: req.password,
+        reason: req.reason,
+        rank: req.rank || "Admin"
+    });
+
+    appData.pendingAdmin.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+    alert(`@${req.username} is now an admin!`);
+}
+
+function denyAdmin(i) {
+    if (!requireRank(["Owner"], "deny admin requests")) return;
+
+    appData.pendingAdmin.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+}
+
+// =========================
+// Auto-refresh stats
+// =========================
+
+setInterval(loadPublicStats, 5 * 60 * 1000);
