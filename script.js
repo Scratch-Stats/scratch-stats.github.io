@@ -496,3 +496,60 @@ function clearSession() {
 // Auto-refresh stats every 5 minutes
 setInterval(loadPublicStats, 5 * 60 * 1000);
 
+// Request system storage
+appData.pendingVerify = appData.pendingVerify || [];
+appData.pendingAdmin = appData.pendingAdmin || [];
+
+// Open request modal
+function openRequestModal(type) {
+    const modal = document.getElementById('requestModal');
+    const title = document.getElementById('requestTitle');
+    const passwordField = document.getElementById('passwordField');
+
+    modal.style.display = 'block';
+
+    if (type === 'verify') {
+        title.textContent = "Request Verification";
+        passwordField.style.display = 'none';
+        modal.setAttribute('data-type', 'verify');
+    } else {
+        title.textContent = "Request Admin Access";
+        passwordField.style.display = 'block';
+        modal.setAttribute('data-type', 'admin');
+    }
+}
+
+// Close modal
+document.querySelector('.close-request').addEventListener('click', () => {
+    document.getElementById('requestModal').style.display = 'none';
+});
+
+// Buttons
+document.getElementById('requestVerifyBtn').addEventListener('click', () => openRequestModal('verify'));
+document.getElementById('requestAdminBtn').addEventListener('click', () => openRequestModal('admin'));
+
+// Handle request form
+document.getElementById('requestForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const type = document.getElementById('requestModal').getAttribute('data-type');
+    const username = document.getElementById('requestUsername').value.trim();
+    const reason = document.getElementById('requestReason').value.trim();
+    const password = document.getElementById('requestPassword').value.trim();
+
+    if (!username || !reason) {
+        alert("Please fill out all fields.");
+        return;
+    }
+
+    if (type === 'verify') {
+        appData.pendingVerify.push({ username, reason });
+        alert("Your verification request has been sent!");
+    } else {
+        appData.pendingAdmin.push({ username, password, reason });
+        alert("Your admin request has been sent!");
+    }
+
+    saveData();
+    document.getElementById('requestModal').style.display = 'none';
+});
