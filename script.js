@@ -258,29 +258,42 @@ function closeSearchModal() {
 // Login
 // =========================
 
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
 
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     const errorDiv = document.getElementById("loginError");
 
-    // 🔥 Insert your real password HERE safely:
-    const ADMIN_PASSWORD = "ScratchStats!!!2026is-the-best";
+    try {
+        const res = await fetch(`${BACKEND}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password })
+        });
 
-    if (username === adminUsername && password === ADMIN_PASSWORD) {
+        const data = await res.json();
+
+        if (!res.ok) {
+            errorDiv.textContent = "Invalid username or password";
+            errorDiv.style.display = "block";
+            return;
+        }
+
+        sessionStorage.setItem("adminToken", data.token);
         isLoggedIn = true;
         currentUser = username;
-        createSession();
-        document.getElementById("loginModal").style.display = "none";
+
         updateUIState();
         loadAdminPanel();
-        errorDiv.style.display = "none";
-    } else {
-        errorDiv.textContent = "Invalid username or password";
+        document.getElementById("loginModal").style.display = "none";
+
+    } catch (err) {
+        errorDiv.textContent = "Login error";
         errorDiv.style.display = "block";
     }
 }
+
 
 function logout() {
     isLoggedIn = false;
