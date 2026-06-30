@@ -346,41 +346,22 @@ function loadMockStats() {
 // Featured Content
 // =========================
 
-function loadFeaturedContent() {
-    const projectsDiv = document.getElementById("featuredProjects");
-    const studiosDiv = document.getElementById("featuredStudios");
-    const usersDiv = document.getElementById("featuredUsers");
+async function loadFeaturedContent() {
+    try {
+        const res = await fetch(`${BACKEND}/featured`);
+        const data = await res.json();
 
-    if (projectsDiv) {
-        projectsDiv.innerHTML =
-            appData.featuredProjects.map(p =>
-                `<a href="https://scratch.mit.edu/projects/${p.id}/" target="_blank" class="featured-item featured-link">
-                    <strong>${p.title}</strong>
-                    <p>ID: ${p.id}</p>
-                </a>`
-            ).join("") || `<p style="color:#999;">No featured projects yet</p>`;
-    }
+        appData.featuredProjects = data.featuredProjects;
+        appData.featuredStudios = data.featuredStudios;
+        appData.featuredUsers = data.featuredUsers;
 
-    if (studiosDiv) {
-        studiosDiv.innerHTML =
-            appData.featuredStudios.map(s =>
-                `<a href="https://scratch.mit.edu/studios/${s.id}/" target="_blank" class="featured-item featured-link">
-                    <strong>${s.title}</strong>
-                    <p>ID: ${s.id}</p>
-                </a>`
-            ).join("") || `<p style="color:#999;">No featured studios yet</p>`;
-    }
-
-    if (usersDiv) {
-        usersDiv.innerHTML =
-            appData.featuredUsers.map(u =>
-                `<a href="https://scratch.mit.edu/users/${u.username}/" target="_blank" class="featured-item featured-link">
-                    <strong>@${u.username} <i class="fas fa-check-circle verified-icon"></i></strong>
-                    <p>Verified User</p>
-                </a>`
-            ).join("") || `<p style="color:#999;">No featured users yet</p>`;
+        renderFeaturedContent();
+        loadManagedFeatured();
+    } catch (err) {
+        console.error("Error loading featured content:", err);
     }
 }
+
 
 // =========================
 // Admin Panel
@@ -457,49 +438,60 @@ function unverifyUser(username) {
 // =========================
 // Feature Content
 // =========================
-
-function featureProject() {
+async function featureProject() {
     if (!requireRank(["Owner", "Admin"], "feature projects")) return;
 
     const id = document.getElementById("projectId").value.trim();
     const title = document.getElementById("projectTitle").value.trim();
     if (!id || !title) return alert("Enter ID and title");
 
-    appData.featuredProjects.unshift({ id, title });
-    if (appData.featuredProjects.length > 6) appData.featuredProjects.pop();
+    await fetch(`${BACKEND}/featured/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            type: "projects",
+            item: { id, title }
+        })
+    });
 
-    saveData();
     loadFeaturedContent();
-    loadManagedFeatured();
 }
 
-function featureStudio() {
+async function featureStudio() {
     if (!requireRank(["Owner", "Admin"], "feature studios")) return;
 
     const id = document.getElementById("studioId").value.trim();
     const title = document.getElementById("studioTitle").value.trim();
     if (!id || !title) return alert("Enter ID and title");
 
-    appData.featuredStudios.unshift({ id, title });
-    if (appData.featuredStudios.length > 6) appData.featuredStudios.pop();
+    await fetch(`${BACKEND}/featured/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            type: "studios",
+            item: { id, title }
+        })
+    });
 
-    saveData();
     loadFeaturedContent();
-    loadManagedFeatured();
 }
 
-function featureUser() {
+async function featureUser() {
     if (!requireRank(["Owner", "Admin"], "feature users")) return;
 
     const username = document.getElementById("userId").value.trim();
     if (!username) return alert("Enter username");
 
-    appData.featuredUsers.unshift({ username });
-    if (appData.featuredUsers.length > 6) appData.featuredUsers.pop();
+    await fetch(`${BACKEND}/featured/add`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            type: "users",
+            item: { username }
+        })
+    });
 
-    saveData();
     loadFeaturedContent();
-    loadManagedFeatured();
 }
 
 function loadManagedFeatured() {
@@ -538,16 +530,17 @@ function loadManagedFeatured() {
     }
 }
 
-function removeFeature(type, index) {
+
+async function removeFeature(type, index) {
     if (!requireRank(["Owner", "Admin"], "remove featured content")) return;
 
-    if (type === "projects") appData.featuredProjects.splice(index, 1);
-    if (type === "studios") appData.featuredStudios.splice(index, 1);
-    if (type === "users") appData.featuredUsers.splice(index, 1);
+    await fetch(`${BACKEND}/featured/remove`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, index })
+    });
 
-    saveData();
     loadFeaturedContent();
-    loadManagedFeatured();
 }
 
 // =========================
@@ -746,3 +739,43 @@ function denyAdmin(i) {
 // =========================
 
 setInterval(loadPublicStats, 5 * 60 * 1000);
+
+function renderFeaturedContent() {
+    const projectsDiv = document.getElementById("featuredProjects");
+    const studiosDiv = document.getElementById("featuredStudios");
+    const usersDiv = document.getElementById("featuredUsers");
+
+    // Projects
+    if (projectsDiv) {
+        projectsDiv.innerHTML =
+            appData.featuredProjects.map(p =>
+                `<a href="https://scratch.mit.edu/projects/${p.id}/" target="_blank" class="featured-item featured-link">
+                    <strong>${p.title}</strong>
+                    <p>ID: ${p.id}</p>
+                </a>`
+            ).join("") || `<p style="color:#999;">No featured projects yet</p>`;
+    }
+
+    // Studios
+    if (studiosDiv) {
+        studiosDiv.innerHTML =
+            appData.featuredStudios.map(s =>
+                `<a href="https://scratch.mit.edu/studios/${s.id}/" target="_blank" class="featured-item featured-link">
+                    <strong>${s.title}</strong>
+                    <p>ID: ${s.id}</p>
+                </a>`
+            ).join("") || `<p style="color:#999;">No featured studios yet</p>`;
+    }
+
+    // Users
+    if (usersDiv) {
+        usersDiv.innerHTML =
+            appData.featuredUsers.map(u =>
+                `<a href="https://scratch.mit.edu/users/${u.username}/" target="_blank" class="featured-item featured-link">
+                    <strong>@${u.username} <i class="fas fa-check-circle verified-icon"></i></strong>
+                    <p>Verified User</p>
+                </a>`
+            ).join("") || `<p style="color:#999;">No featured users yet</p>`;
+    }
+}
+
