@@ -801,3 +801,35 @@ function renderFeaturedContent() {
     }
 }
 
+// =========================
+// Leaderboard
+// =========================
+
+async function loadLeaderboard() {
+    try {
+        const res = await fetch(`${BACKEND}/leaderboard`);
+        const data = await res.json();
+
+        const list = document.getElementById("leaderboardList");
+        list.innerHTML = data.map(u => `
+            <div class="leaderboard-item">
+                <div class="leaderboard-rank">
+                    <span>#${data.indexOf(u) + 1}</span>
+                </div>
+
+                <div class="leaderboard-info">
+                    <strong>@${u.username}</strong>
+                    <p>${u.followers.toLocaleString()} followers</p>
+                </div>
+
+                <a href="https://scratch.mit.edu/users/${u.username}/"
+                   target="_blank"
+                   class="leaderboard-link">
+                   View →
+                </a>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error("Leaderboard error:", err);
+    }
+}
