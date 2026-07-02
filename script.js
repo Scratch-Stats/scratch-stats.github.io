@@ -9,6 +9,15 @@ const adminUsername = "Duke_Scratch56";
 // Backend URL
 const BACKEND = "https://scratch-stats-backend.onrender.com";
 
+// =========================
+// Admin Token Headers
+// =========================
+const adminHeaders = {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + sessionStorage.getItem("adminToken")
+};
+
+
 // Local storage data
 let appData = {
     verifiedUsers: [],
@@ -377,13 +386,13 @@ async function loadFeaturedContent() {
 
 
 // =========================
-// Admin Panel
+// Admin Panel (Backend Only)
 // =========================
 
 function loadAdminPanel() {
     loadVerifiedUsers();
     loadManagedFeatured();
-    loadPendingRequests();
+    loadPendingRequests(); // still local-only
 }
 
 // =========================
@@ -394,8 +403,9 @@ function getCurrentRank() {
     if (!currentUser) return null;
     if (currentUser === adminUsername) return "Owner";
 
-    const admin = appData.adminAccounts.find(a => a.username === currentUser);
-    return admin?.rank || null;
+    // Load admin accounts from backend
+    // (cached in appData for UI only)
+    return appData.adminAccounts.find(a => a.username === currentUser)?.rank || null;
 }
 
 function requireRank(allowedRanks, actionName) {
@@ -408,49 +418,77 @@ function requireRank(allowedRanks, actionName) {
 }
 
 // =========================
-// Verified Users
+// Verified Users (Backend)
 // =========================
 
-function verifyUser() {
+async function loadVerifiedUsers() {
+    try {
+        const res = await fetch(`${BACKEND}/verified`);
+        const data = await res.json();
+        appData.verifiedUsers = data.verifiedUsers;
+
+        const list = document.getElementById("verifiedUsersList");
+        if (!list) return;
+
+        list.innerHTML =
+            appData.verifiedUsers.map(user =>
+                `<div class="list-item">
+                    <span>✓ @${user}</span>
+                    <button class="btn btn-danger" onclick="unverifyUser('${user}')">Remove</button>
+                </div>`
+            ).join("") || `<p style="color:#999;">No verified users yet</p>`;
+    } catch (err) {
+        console.error("Error loading verified users:", err);
+    }
+}
+
+async function verifyUser() {
     if (!requireRank(["Owner", "Admin", "Moderator"], "verify users")) return;
 
     const username = document.getElementById("verifyUsername").value.trim();
     if (!username) return alert("Enter a username");
 
-    if (!appData.verifiedUsers.includes(username)) {
-        appData.verifiedUsers.push(username);
-        saveData();
-        loadVerifiedUsers();
-        alert(`✓ @${username} verified`);
-    } else {
-        alert("Already verified");
-    }
+    await fetch(`${BACKEND}/verified/add`, {
+        method: "POST",
+        headers: adminHeaders,
+        body: JSON.stringify({ username })
+    });
+
+    loadVerifiedUsers();
 }
 
-function loadVerifiedUsers() {
-    const list = document.getElementById("verifiedUsersList");
-    if (!list) return;
-
-    list.innerHTML =
-        appData.verifiedUsers.map(user =>
-            `<div class="list-item">
-                <span>✓ @${user}</span>
-                <button class="btn btn-danger" onclick="unverifyUser('${user}')">Remove</button>
-            </div>`
-        ).join("") || `<p style="color:#999;">No verified users yet</p>`;
-}
-
-function unverifyUser(username) {
+async function unverifyUser(username) {
     if (!requireRank(["Owner", "Admin"], "remove verified users")) return;
 
-    appData.verifiedUsers = appData.verifiedUsers.filter(u => u !== username);
-    saveData();
+    await fetch(`${BACKEND}/verified/remove`, {
+        method: "POST",
+        headers: adminHeaders,
+        body: JSON.stringify({ username })
+    });
+
     loadVerifiedUsers();
 }
 
 // =========================
-// Feature Content
+// Featured Content (Backend)
 // =========================
+
+async function loadFeaturedContent() {
+    try {
+        const res = await fetch(`${BACKEND}/featured`);
+        const data = await res.json();
+
+        appData.featuredProjects = data.featuredProjects;
+        appData.featuredStudios = data.featuredStudios;
+        appData.featuredUsers = data.featuredUsers;
+
+        renderFeaturedContent();
+        loadManagedFeatured();
+    } catch (err) {
+        console.error("Error loading featured content:", err);
+    }
+}
+
 async function featureProject() {
     if (!requireRank(["Owner", "Admin"], "feature projects")) return;
 
@@ -460,7 +498,7 @@ async function featureProject() {
 
     await fetch(`${BACKEND}/featured/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: adminHeaders,
         body: JSON.stringify({
             type: "projects",
             item: { id, title }
@@ -479,7 +517,7 @@ async function featureStudio() {
 
     await fetch(`${BACKEND}/featured/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: adminHeaders,
         body: JSON.stringify({
             type: "studios",
             item: { id, title }
@@ -497,11 +535,23 @@ async function featureUser() {
 
     await fetch(`${BACKEND}/featured/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: adminHeaders,
         body: JSON.stringify({
             type: "users",
             item: { username }
         })
+    });
+
+    loadFeaturedContent();
+}
+
+async function removeFeature(type, index) {
+    if (!requireRank(["Owner", "Admin"], "remove featured content")) return;
+
+    await fetch(`${BACKEND}/featured/remove`, {
+        method: "POST",
+        headers: adminHeaders,
+        body: JSON.stringify({ type, index })
     });
 
     loadFeaturedContent();
@@ -549,12 +599,13 @@ async function removeFeature(type, index) {
 
     await fetch(`${BACKEND}/featured/remove`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: adminHeaders,
         body: JSON.stringify({ type, index })
     });
 
     loadFeaturedContent();
 }
+
 
 // =========================
 // Tabs
@@ -649,30 +700,10 @@ function handleRequestForm(e) {
 // =========================
 
 function loadPendingRequests() {
-    const verifyDiv = document.getElementById("pendingVerifyList");
     const adminDiv = document.getElementById("pendingAdminList");
 
     if (!verifyDiv || !adminDiv) return;
 
-    // Verification Requests
-    verifyDiv.innerHTML = appData.pendingVerify.length > 0
-        ? appData.pendingVerify.map((req, i) =>
-            `<div class="pending-card">
-                <div class="pending-info">
-                    <strong>@${req.username}</strong>
-                    <span class="pending-reason">"${req.reason}"</span>
-                </div>
-                <div class="pending-actions">
-                    <button class="btn btn-approve" onclick="approveVerify(${i})">
-                        Approve
-                    </button>
-                    <button class="btn btn-deny" onclick="denyVerify(${i})">
-                        Deny
-                    </button>
-                </div>
-            </div>`
-        ).join("")
-        : '<p style="color:#999;">No pending verification requests</p>';
 
     // Admin Requests
     adminDiv.innerHTML = appData.pendingAdmin.length > 0
@@ -698,28 +729,6 @@ function loadPendingRequests() {
 // =========================
 // Approve / Deny Requests
 // =========================
-
-function approveVerify(i) {
-    if (!requireRank(["Owner", "Admin", "Moderator"], "approve verification requests")) return;
-
-    const user = appData.pendingVerify[i].username;
-    if (!appData.verifiedUsers.includes(user)) {
-        appData.verifiedUsers.push(user);
-    }
-    appData.pendingVerify.splice(i, 1);
-    saveData();
-    loadPendingRequests();
-    loadVerifiedUsers();
-    alert(`@${user} is now verified!`);
-}
-
-function denyVerify(i) {
-    if (!requireRank(["Owner", "Admin", "Moderator"], "deny verification requests")) return;
-
-    appData.pendingVerify.splice(i, 1);
-    saveData();
-    loadPendingRequests();
-}
 
 function approveAdmin(i) {
     if (!requireRank(["Owner"], "approve admin requests")) return;
