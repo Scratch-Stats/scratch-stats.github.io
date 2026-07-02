@@ -18,7 +18,7 @@ A comprehensive statistics and analytics platform for the Scratch community, pow
 - **HTML5**: Semantic markup and structure
 - **CSS3**: Modern styling with responsive design
 - **JavaScript (Vanilla)**: Interactive functionality without frameworks
-- **Language Composition**: JavaScript (67.2%), CSS (19.8%), HTML (13%)
+- **Language Composition**: JavaScript (65.5%), CSS (21.2%), HTML (13.3%)
 
 ### Backend
 - **Node.js**: Server runtime
@@ -36,8 +36,8 @@ A comprehensive statistics and analytics platform for the Scratch community, pow
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/Scratch-Stats/-.git
-   cd Scratch-Stats
+   git clone https://github.com/Scratch-Stats/scratch-stats.github.io.git
+   cd scratch-stats.github.io
    ```
 
 2. **Install backend dependencies**
@@ -148,12 +148,10 @@ docker run -p 3000:3000 scratch-stats
 ## 📝 File Structure
 
 ```
-Scratch-Stats/
+scratch-stats.github.io/
 ├── backend/
 │   ├── server.js          # Express server with API endpoints
-│   └── package.json       # Node.js dependencies
-├── frontend/
-│   └── api-client.js      # Frontend API client utilities
+│   └── package.json       # Node.js dependencies (if present)
 ├── index.html             # Main HTML file
 ├── script.js              # Frontend logic and event handlers
 ├── styles.css             # Styling
@@ -167,6 +165,12 @@ Scratch-Stats/
 - Scratchdb: https://scratchdb.org/
 
 ## 📋 Changelog
+
+### Unreleased - 2026-07-02
+- ✅ **Fixed**: README clone URL and file structure to match repository (was incorrect)
+- ✅ **Updated**: Language composition statistics to reflect the repository's detected composition (JavaScript 65.5%, CSS 21.2%, HTML 13.3%)
+- ✅ **Improved**: Clarified instructions for running the backend and frontend locally
+- ✅ **Added**: Note to update Changelog/README when changes are made (PR checklist recommended)
 
 ### v1.1.0 - Search Bar Fixes & Improvements
 - 🐛 **Fixed**: Search bar event listener delegation and click-outside detection
