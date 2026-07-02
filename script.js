@@ -91,11 +91,11 @@ function setupEventListeners() {
 
     // Search
     const searchInput = document.getElementById("searchInput");
+    const searchWrapper = document.querySelector(".search-wrapper");
     const searchFilterToggle = document.querySelector(".search-filter-toggle");
     const searchFilters = document.querySelector(".search-filters");
-    const searchWrapper = document.querySelector(".search-wrapper");
 
-    if (searchFilterToggle) {
+    if (searchFilterToggle && searchFilters) {
         searchFilterToggle.addEventListener("click", (e) => {
             e.stopPropagation();
             searchFilters.style.display =
@@ -103,13 +103,15 @@ function setupEventListeners() {
         });
     }
 
-    document.addEventListener("click", (e) => {
-        if (!searchWrapper.contains(e.target)) {
-            searchFilters.style.display = "none";
-            const suggestionsDiv = document.getElementById("searchSuggestions");
-            if (suggestionsDiv) suggestionsDiv.style.display = "none";
-        }
-    });
+    if (searchWrapper) {
+        document.addEventListener("click", (e) => {
+            if (!searchWrapper.contains(e.target)) {
+                if (searchFilters) searchFilters.style.display = "none";
+                const suggestionsDiv = document.getElementById("searchSuggestions");
+                if (suggestionsDiv) suggestionsDiv.style.display = "none";
+            }
+        });
+    }
 
     if (searchInput) {
         let searchTimeout;
@@ -167,7 +169,7 @@ async function updateSearchSuggestions() {
     const suggestionsDiv = document.getElementById("searchSuggestions");
 
     if (!query || query.length < 2) {
-        suggestionsDiv.style.display = "none";
+        if (suggestionsDiv) suggestionsDiv.style.display = "none";
         return;
     }
 
@@ -179,23 +181,26 @@ async function updateSearchSuggestions() {
         data.slice(0, 3).forEach(project => {
             const title = project.title || "Untitled";
             html += `
-                <div class="suggestion-item" onclick="selectSuggestion('${title.replace(/'/g, "\\'")}')">
+                <div class="suggestion-item" onclick="selectSuggestion('${title.replace(/'/g, "\\'")}')"> 
                     <i class="fas fa-project-diagram"></i> ${title}
                 </div>`;
         });
 
-        suggestionsDiv.innerHTML = html;
-        suggestionsDiv.style.display = html ? "block" : "none";
+        if (suggestionsDiv) {
+            suggestionsDiv.innerHTML = html;
+            suggestionsDiv.style.display = html ? "block" : "none";
+        }
 
     } catch (err) {
         console.error("Error fetching suggestions:", err);
-        suggestionsDiv.style.display = "none";
+        if (suggestionsDiv) suggestionsDiv.style.display = "none";
     }
 }
 
 function selectSuggestion(s) {
     document.getElementById("searchInput").value = s;
-    document.getElementById("searchSuggestions").style.display = "none";
+    const suggestionsDiv = document.getElementById("searchSuggestions");
+    if (suggestionsDiv) suggestionsDiv.style.display = "none";
     performSearch();
 }
 
@@ -208,6 +213,8 @@ async function performSearch() {
     if (!query) return alert("Please enter a search term");
 
     const searchResults = document.getElementById("searchResults");
+    if (!searchResults) return;
+    
     searchResults.innerHTML = "<p class='loading'>🔍 Searching...</p>";
     document.getElementById("searchModal").style.display = "block";
 
@@ -284,8 +291,10 @@ async function handleLogin(e) {
         const data = await res.json();
 
         if (!res.ok) {
-            errorDiv.textContent = "Invalid username or password";
-            errorDiv.style.display = "block";
+            if (errorDiv) {
+                errorDiv.textContent = "Invalid username or password";
+                errorDiv.style.display = "block";
+            }
             return;
         }
 
@@ -298,8 +307,10 @@ async function handleLogin(e) {
         document.getElementById("loginModal").style.display = "none";
 
     } catch (err) {
-        errorDiv.textContent = "Login error";
-        errorDiv.style.display = "block";
+        if (errorDiv) {
+            errorDiv.textContent = "Login error";
+            errorDiv.style.display = "block";
+        }
     }
 }
 
@@ -309,7 +320,8 @@ function logout() {
     currentUser = null;
     clearSession();
     updateUIState();
-    document.getElementById("adminPanel").style.display = "none";
+    const adminPanel = document.getElementById("adminPanel");
+    if (adminPanel) adminPanel.style.display = "none";
 }
 
 function updateUIState() {
@@ -350,18 +362,19 @@ function loadPublicStats() {
             comments: 580000000 + Math.floor(Math.random() * 100000000)
         };
 
-        document.getElementById("totalUsers").textContent = stats.users.toLocaleString();
-        document.getElementById("totalProjects").textContent = stats.projects.toLocaleString();
-        document.getElementById("totalStudios").textContent = stats.studios.toLocaleString();
-        document.getElementById("totalComments").textContent = stats.comments.toLocaleString();
+        const totalUsersEl = document.getElementById("totalUsers");
+        const totalProjectsEl = document.getElementById("totalProjects");
+        const totalStudiosEl = document.getElementById("totalStudios");
+        const totalCommentsEl = document.getElementById("totalComments");
 
-    } catch {
-        loadMockStats();
+        if (totalUsersEl) totalUsersEl.textContent = stats.users.toLocaleString();
+        if (totalProjectsEl) totalProjectsEl.textContent = stats.projects.toLocaleString();
+        if (totalStudiosEl) totalStudiosEl.textContent = stats.studios.toLocaleString();
+        if (totalCommentsEl) totalCommentsEl.textContent = stats.comments.toLocaleString();
+
+    } catch (err) {
+        console.error("Error loading stats:", err);
     }
-}
-
-function loadMockStats() {
-    loadPublicStats();
 }
 
 // =========================
@@ -373,9 +386,9 @@ async function loadFeaturedContent() {
         const res = await fetch(`${BACKEND}/featured`);
         const data = await res.json();
 
-        appData.featuredProjects = data.featuredProjects;
-        appData.featuredStudios = data.featuredStudios;
-        appData.featuredUsers = data.featuredUsers;
+        appData.featuredProjects = data.featuredProjects || [];
+        appData.featuredStudios = data.featuredStudios || [];
+        appData.featuredUsers = data.featuredUsers || [];
 
         renderFeaturedContent();
         loadManagedFeatured();
@@ -384,7 +397,6 @@ async function loadFeaturedContent() {
     }
 }
 
-
 // =========================
 // Admin Panel (Backend Only)
 // =========================
@@ -392,7 +404,7 @@ async function loadFeaturedContent() {
 function loadAdminPanel() {
     loadVerifiedUsers();
     loadManagedFeatured();
-    loadPendingRequests(); // still local-only
+    loadPendingRequests();
 }
 
 // =========================
@@ -403,8 +415,6 @@ function getCurrentRank() {
     if (!currentUser) return null;
     if (currentUser === adminUsername) return "Owner";
 
-    // Load admin accounts from backend
-    // (cached in appData for UI only)
     return appData.adminAccounts.find(a => a.username === currentUser)?.rank || null;
 }
 
@@ -425,7 +435,7 @@ async function loadVerifiedUsers() {
     try {
         const res = await fetch(`${BACKEND}/verified`);
         const data = await res.json();
-        appData.verifiedUsers = data.verifiedUsers;
+        appData.verifiedUsers = data.verifiedUsers || [];
 
         const list = document.getElementById("verifiedUsersList");
         if (!list) return;
@@ -445,7 +455,10 @@ async function loadVerifiedUsers() {
 async function verifyUser() {
     if (!requireRank(["Owner", "Admin", "Moderator"], "verify users")) return;
 
-    const username = document.getElementById("verifyUsername").value.trim();
+    const verifyUsernameEl = document.getElementById("verifyUsername");
+    if (!verifyUsernameEl) return alert("Verify username field not found");
+    
+    const username = verifyUsernameEl.value.trim();
     if (!username) return alert("Enter a username");
 
     await fetch(`${BACKEND}/verified/add`, {
@@ -455,6 +468,7 @@ async function verifyUser() {
     });
 
     loadVerifiedUsers();
+    verifyUsernameEl.value = "";
 }
 
 async function unverifyUser(username) {
@@ -473,27 +487,16 @@ async function unverifyUser(username) {
 // Featured Content (Backend)
 // =========================
 
-async function loadFeaturedContent() {
-    try {
-        const res = await fetch(`${BACKEND}/featured`);
-        const data = await res.json();
-
-        appData.featuredProjects = data.featuredProjects;
-        appData.featuredStudios = data.featuredStudios;
-        appData.featuredUsers = data.featuredUsers;
-
-        renderFeaturedContent();
-        loadManagedFeatured();
-    } catch (err) {
-        console.error("Error loading featured content:", err);
-    }
-}
-
 async function featureProject() {
     if (!requireRank(["Owner", "Admin"], "feature projects")) return;
 
-    const id = document.getElementById("projectId").value.trim();
-    const title = document.getElementById("projectTitle").value.trim();
+    const projectIdEl = document.getElementById("projectId");
+    const projectTitleEl = document.getElementById("projectTitle");
+    
+    if (!projectIdEl || !projectTitleEl) return alert("Project form fields not found");
+    
+    const id = projectIdEl.value.trim();
+    const title = projectTitleEl.value.trim();
     if (!id || !title) return alert("Enter ID and title");
 
     await fetch(`${BACKEND}/featured/add`, {
@@ -506,13 +509,20 @@ async function featureProject() {
     });
 
     loadFeaturedContent();
+    projectIdEl.value = "";
+    projectTitleEl.value = "";
 }
 
 async function featureStudio() {
     if (!requireRank(["Owner", "Admin"], "feature studios")) return;
 
-    const id = document.getElementById("studioId").value.trim();
-    const title = document.getElementById("studioTitle").value.trim();
+    const studioIdEl = document.getElementById("studioId");
+    const studioTitleEl = document.getElementById("studioTitle");
+    
+    if (!studioIdEl || !studioTitleEl) return alert("Studio form fields not found");
+    
+    const id = studioIdEl.value.trim();
+    const title = studioTitleEl.value.trim();
     if (!id || !title) return alert("Enter ID and title");
 
     await fetch(`${BACKEND}/featured/add`, {
@@ -525,12 +535,17 @@ async function featureStudio() {
     });
 
     loadFeaturedContent();
+    studioIdEl.value = "";
+    studioTitleEl.value = "";
 }
 
 async function featureUser() {
     if (!requireRank(["Owner", "Admin"], "feature users")) return;
 
-    const username = document.getElementById("userId").value.trim();
+    const userIdEl = document.getElementById("userId");
+    if (!userIdEl) return alert("User field not found");
+    
+    const username = userIdEl.value.trim();
     if (!username) return alert("Enter username");
 
     await fetch(`${BACKEND}/featured/add`, {
@@ -543,6 +558,7 @@ async function featureUser() {
     });
 
     loadFeaturedContent();
+    userIdEl.value = "";
 }
 
 async function removeFeature(type, index) {
@@ -593,20 +609,6 @@ function loadManagedFeatured() {
     }
 }
 
-
-async function removeFeature(type, index) {
-    if (!requireRank(["Owner", "Admin"], "remove featured content")) return;
-
-    await fetch(`${BACKEND}/featured/remove`, {
-        method: "POST",
-        headers: adminHeaders,
-        body: JSON.stringify({ type, index })
-    });
-
-    loadFeaturedContent();
-}
-
-
 // =========================
 // Tabs
 // =========================
@@ -618,7 +620,8 @@ function switchTab(e) {
     document.querySelectorAll(".tab-content").forEach(content => content.classList.remove("active"));
 
     e.target.classList.add("active");
-    document.getElementById(tabName).classList.add("active");
+    const tabContent = document.getElementById(tabName);
+    if (tabContent) tabContent.classList.add("active");
 }
 
 // =========================
@@ -646,15 +649,17 @@ function openRequestModal(type) {
     const title = document.getElementById("requestTitle");
     const passwordField = document.getElementById("passwordField");
 
+    if (!modal || !title) return;
+
     modal.style.display = "block";
 
     if (type === "verify") {
         title.textContent = "Request Verification";
-        passwordField.style.display = "none";
+        if (passwordField) passwordField.style.display = "none";
         modal.setAttribute("data-type", "verify");
     } else {
         title.textContent = "Request Admin Access";
-        passwordField.style.display = "block";
+        if (passwordField) passwordField.style.display = "block";
         modal.setAttribute("data-type", "admin");
     }
 }
@@ -666,10 +671,14 @@ function openRequestModal(type) {
 function handleRequestForm(e) {
     e.preventDefault();
 
-    const type = document.getElementById("requestModal").getAttribute("data-type");
+    const modal = document.getElementById("requestModal");
+    if (!modal) return;
+    
+    const type = modal.getAttribute("data-type");
     const username = document.getElementById("requestUsername").value.trim();
     const reason = document.getElementById("requestReason").value.trim();
-    const password = document.getElementById("requestPassword").value.trim();
+    const passwordField = document.getElementById("passwordField");
+    const password = passwordField ? passwordField.value.trim() : "";
 
     if (!username || !reason || (type === "admin" && !password)) {
         alert("Please fill out all required fields.");
@@ -684,14 +693,15 @@ function handleRequestForm(e) {
             username,
             password: btoa(password),
             reason,
-            rank: "Admin" // default rank for new admins
+            rank: "Admin"
         });
         alert("Your admin request has been sent!");
     }
 
     saveData();
-    document.getElementById("requestModal").style.display = "none";
-    document.getElementById("requestForm").reset();
+    modal.style.display = "none";
+    const requestForm = document.getElementById("requestForm");
+    if (requestForm) requestForm.reset();
     loadPendingRequests();
 }
 
@@ -701,34 +711,78 @@ function handleRequestForm(e) {
 
 function loadPendingRequests() {
     const adminDiv = document.getElementById("pendingAdminList");
+    const verifyDiv = document.getElementById("pendingVerifyList");
 
-    if (!verifyDiv || !adminDiv) return;
+    if (!adminDiv && !verifyDiv) return;
 
+    // Verify Requests
+    if (verifyDiv) {
+        verifyDiv.innerHTML = appData.pendingVerify.length > 0
+            ? appData.pendingVerify.map((req, i) =>
+                `<div class="pending-card">
+                    <div class="pending-info">
+                        <strong>@${req.username}</strong>
+                        <span class="pending-reason">"${req.reason}"</span>
+                    </div>
+                    <div class="pending-actions">
+                        <button class="btn btn-approve" onclick="approveVerify(${i})">
+                            Approve
+                        </button>
+                        <button class="btn btn-deny" onclick="denyVerify(${i})">
+                            Deny
+                        </button>
+                    </div>
+                </div>`
+            ).join("")
+            : '<p style="color:#999;">No pending verification requests</p>';
+    }
 
     // Admin Requests
-    adminDiv.innerHTML = appData.pendingAdmin.length > 0
-        ? appData.pendingAdmin.map((req, i) =>
-            `<div class="pending-card">
-                <div class="pending-info">
-                    <strong>@${req.username}</strong>
-                    <span class="pending-reason">"${req.reason}"</span>
-                </div>
-                <div class="pending-actions">
-                    <button class="btn btn-approve" onclick="approveAdmin(${i})">
-                        Approve
-                    </button>
-                    <button class="btn btn-deny" onclick="denyAdmin(${i})">
-                        Deny
-                    </button>
-                </div>
-            </div>`
-        ).join("")
-        : '<p style="color:#999;">No pending admin requests</p>';
+    if (adminDiv) {
+        adminDiv.innerHTML = appData.pendingAdmin.length > 0
+            ? appData.pendingAdmin.map((req, i) =>
+                `<div class="pending-card">
+                    <div class="pending-info">
+                        <strong>@${req.username}</strong>
+                        <span class="pending-reason">"${req.reason}"</span>
+                    </div>
+                    <div class="pending-actions">
+                        <button class="btn btn-approve" onclick="approveAdmin(${i})">
+                            Approve
+                        </button>
+                        <button class="btn btn-deny" onclick="denyAdmin(${i})">
+                            Deny
+                        </button>
+                    </div>
+                </div>`
+            ).join("")
+            : '<p style="color:#999;">No pending admin requests</p>';
+    }
 }
 
 // =========================
 // Approve / Deny Requests
 // =========================
+
+function approveVerify(i) {
+    if (!requireRank(["Owner", "Admin"], "approve verification requests")) return;
+
+    const req = appData.pendingVerify[i];
+    appData.verifiedUsers.push(req.username);
+    appData.pendingVerify.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+    loadVerifiedUsers();
+    alert(`@${req.username} is now verified!`);
+}
+
+function denyVerify(i) {
+    if (!requireRank(["Owner", "Admin"], "deny verification requests")) return;
+
+    appData.pendingVerify.splice(i, 1);
+    saveData();
+    loadPendingRequests();
+}
 
 function approveAdmin(i) {
     if (!requireRank(["Owner"], "approve admin requests")) return;
@@ -798,38 +852,5 @@ function renderFeaturedContent() {
                     <p>Verified User</p>
                 </a>`
             ).join("") || `<p style="color:#999;">No featured users yet</p>`;
-    }
-}
-
-// =========================
-// Leaderboard
-// =========================
-
-async function loadLeaderboard() {
-    try {
-        const res = await fetch(`${BACKEND}/leaderboard`);
-        const data = await res.json();
-
-        const list = document.getElementById("leaderboardList");
-        list.innerHTML = data.map(u => `
-            <div class="leaderboard-item">
-                <div class="leaderboard-rank">
-                    <span>#${data.indexOf(u) + 1}</span>
-                </div>
-
-                <div class="leaderboard-info">
-                    <strong>@${u.username}</strong>
-                    <p>${u.followers.toLocaleString()} followers</p>
-                </div>
-
-                <a href="https://scratch.mit.edu/users/${u.username}/"
-                   target="_blank"
-                   class="leaderboard-link">
-                   View →
-                </a>
-            </div>
-        `).join("");
-    } catch (err) {
-        console.error("Leaderboard error:", err);
     }
 }

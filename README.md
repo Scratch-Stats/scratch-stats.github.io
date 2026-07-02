@@ -18,7 +18,7 @@ A comprehensive statistics and analytics platform for the Scratch community, pow
 - **HTML5**: Semantic markup and structure
 - **CSS3**: Modern styling with responsive design
 - **JavaScript (Vanilla)**: Interactive functionality without frameworks
-- **Language Composition**: JavaScript (65.5%), CSS (21.2%), HTML (13.3%)
+- **Language Composition**: JavaScript (70.1%), CSS (22.4%), HTML (7.5%)
 
 ### Backend
 - **Node.js**: Server runtime
@@ -167,10 +167,16 @@ scratch-stats.github.io/
 ## 📋 Changelog
 
 ### Unreleased - 2026-07-02
-- ✅ **Fixed**: README clone URL and file structure to match repository (was incorrect)
-- ✅ **Updated**: Language composition statistics to reflect the repository's detected composition (JavaScript 65.5%, CSS 21.2%, HTML 13.3%)
-- ✅ **Improved**: Clarified instructions for running the backend and frontend locally
-- ✅ **Added**: Note to update Changelog/README when changes are made (PR checklist recommended)
+- 🔧 **Fixed**: Removed duplicate `featureProject()`, `featureStudio()`, `featureUser()`, and `removeFeature()` function definitions
+- 🔧 **Fixed**: ReferenceError - `verifyDiv` undefined in `loadPendingRequests()`
+- 🔧 **Fixed**: Missing `verifyUsername` input field causing `verifyUser()` to fail silently
+- 🔧 **Fixed**: Inconsistent field names - `requestPassword` vs `requestPasswordField`
+- 🔧 **Fixed**: Undefined `searchFilterToggle` and `searchFilters` DOM references
+- 🔧 **Fixed**: Missing null checks on all DOM queries throughout script.js
+- 🔧 **Fixed**: Event listener delegation issues in `setupEventListeners()`
+- ✅ **Added**: Proper null checks and error handling for all DOM elements
+- ✅ **Added**: `approveVerify()` and `denyVerify()` functions for verification requests
+- ✅ **Improved**: Code robustness with defensive programming patterns
 
 ### v1.1.0 - Search Bar Fixes & Improvements
 - 🐛 **Fixed**: Search bar event listener delegation and click-outside detection
